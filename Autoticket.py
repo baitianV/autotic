@@ -19,7 +19,7 @@ from msedge.selenium_tools import Edge
 
 
 class Concert(object):
-    def __init__(self, session, price, date, real_name, nick_name, ticket_num, damai_url, target_url, browser):
+    def __init__(self, session, price, date, real_name, nick_name, ticket_num, damai_url, target_url, browser,cst_name,cst_phone):
         self.session = session  # 场次序号优先级
         self.price = price  # 票价序号优先级
         self.date = date # 日期选择
@@ -34,6 +34,9 @@ class Concert(object):
         self.damai_url = damai_url  # 大麦网官网网址
         self.target_url = target_url  # 目标购票网址
         self.browser = browser # 0代表Chrome，1代表Firefox，默认为Chrome
+        self.cst_name = cst_name  # 联系人
+        self.cst_phone = cst_phone  # 手机号
+        
         self.total_wait_time = 3 # 页面元素加载总等待时间
         self.refresh_wait_time = 0.3 # 页面元素等待刷新时间
         self.intersect_wait_time = 0.5 # 间隔等待时间，防止速度过快导致问题
@@ -132,11 +135,13 @@ class Concert(object):
         try:
             if self.type == 1:  # detail.damai.cn
                 #locator = (By.XPATH, "/html/body/div[1]/div/div[0]/div[1]/a[2]/div")
-                locator = (By.XPATH, '//div[@class="buybtn"]')
+                locator = (By.XPATH, '//div[@class="span-box-header name-user show"]')
             elif self.type == 2:  # piao.damai.cn
                 locator = (By.XPATH, "/html/body/div[1]/div/ul/li[2]/div/label/a[2]")
             WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
                 EC.text_to_be_present_in_element(locator, self.nick_name))
+            # WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
+            #     EC.presence_of_element_located(locator, self.nick_name))
             self.status = 1
             print("###登录成功###")
         except Exception as e:
@@ -336,8 +341,15 @@ class Concert(object):
     def check_order_1(self):
         if self.status in [3, 4]:
             print('###开始确认订单###')
-            button_xpath = " //*[@id=\"confirmOrder_1\"]/div[%d]/button" # 同意以上协议并提交订单Xpath
+            button_xpath = '//div[@class="submit-wrapper"]/button' # 同意以上协议并提交订单Xpath
             button_replace = 8 # 当实名者信息不空时为9，空时为8
+            
+            #填写联系人
+            formdiv=self.driver.find_elements(By.XPATH,'//div[@class="delivery-form"]')
+            if len(formdiv)>0:
+                print('###填写联系人信息###')
+                
+                
             if self.real_name: # 实名者信息不为空
                 button_replace = 9
                 print('###选择购票人信息###')
@@ -351,7 +363,7 @@ class Concert(object):
                     raise Exception("***错误：实名信息框未显示，请检查网络或配置文件***")
             submitbtn = WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
                     EC.presence_of_element_located(
-                        (By.XPATH, button_xpath%button_replace))) # 同意以上协议并提交订单
+                        (By.XPATH, button_xpath))) # 同意以上协议并提交订单
             submitbtn.click()  
             '''# 以下的方法更通用，但是更慢
             try:
@@ -430,7 +442,7 @@ if __name__ == '__main__':
                     config = loads(f.read())
                 # params: 场次优先级，票价优先级，日期， 实名者序号, 用户昵称， 购买票数， 官网网址， 目标网址， 浏览器
         con = Concert(config['sess'], config['price'], config['date'], config['real_name'], config['nick_name'], config['ticket_num'],
-                      config['damai_url'], config['target_url'], config['browser'])
+                      config['damai_url'], config['target_url'], config['browser'],config['cst_name'],config['cst_phone'])
     except Exception as e:
         print(e)
         raise Exception("***错误：初始化失败，请检查配置文件***")
