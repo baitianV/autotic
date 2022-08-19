@@ -348,6 +348,14 @@ class Concert(object):
             formdiv=self.driver.find_elements(By.XPATH,'//div[@class="delivery-form"]')
             if len(formdiv)>0:
                 print('###填写联系人信息###')
+                div=formdiv[0].find_elements(By.XPATH,'//div[@class="next-col delivery-form-content"]')
+                print(div[0].text)
+                input_1=div[0].find_elements(By.XPATH,'/div/span/input')
+                
+                print(input_1)
+                # input_1.send_keys(self.cst_name)
+                # input_2=div[1].find_element(By.XPATH,'/div/span/input')
+                # input_2.send_keys(self.cst_phone)
                 
                 
             if self.real_name: # 实名者信息不为空
