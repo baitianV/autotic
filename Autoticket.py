@@ -9,6 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 from msedge.selenium_tools import EdgeOptions
 from msedge.selenium_tools import Edge
 # import sys # 用于py2.7时解注释
@@ -19,7 +20,7 @@ from msedge.selenium_tools import Edge
 
 
 class Concert(object):
-    def __init__(self, session, price, date, real_name, nick_name, ticket_num, damai_url, target_url, browser,cst_name,cst_phone):
+    def __init__(self, session, price, date, real_name, nick_name, ticket_num, damai_url, target_url, browser,cst_name,cst_phone,buyer):
         self.session = session  # 场次序号优先级
         self.price = price  # 票价序号优先级
         self.date = date # 日期选择
@@ -36,6 +37,7 @@ class Concert(object):
         self.browser = browser # 0代表Chrome，1代表Firefox，默认为Chrome
         self.cst_name = cst_name  # 联系人
         self.cst_phone = cst_phone  # 手机号
+        self.buyer=buyer#观演人
         
         self.total_wait_time = 3 # 页面元素加载总等待时间
         self.refresh_wait_time = 0.3 # 页面元素等待刷新时间
@@ -348,27 +350,51 @@ class Concert(object):
             formdiv=self.driver.find_elements(By.XPATH,'//div[@class="delivery-form"]')
             if len(formdiv)>0:
                 print('###填写联系人信息###')
-                div=formdiv[0].find_elements(By.XPATH,'//div[@class="next-col delivery-form-content"]')
-                print(div[0].text)
-                input_1=div[0].find_elements(By.XPATH,'/div/span/input')
+                #div=formdiv[0].find_elements(By.XPATH,'.//div[@class="next-col delivery-form-content"]')
+                inp=formdiv[0].find_elements(By.XPATH,'.//input[@type="text"]')
                 
-                print(input_1)
-                # input_1.send_keys(self.cst_name)
-                # input_2=div[1].find_element(By.XPATH,'/div/span/input')
-                # input_2.send_keys(self.cst_phone)
+                #print(div[0].find_elements(By.XPATH,'//input[@type="text"]'))
+                inp[0].click()
+                #inp[0].clear()
+                inp[0].send_keys(Keys.CONTROL+'a')
+                inp[0].send_keys(Keys.BACKSPACE)
+                inp[0].send_keys(self.cst_name)
+                inp[0].send_keys(Keys.ENTER)
+                #print(inp[0].get_attribute("outerHTML"))
+                sleep(0.2)
+                inp[1].click()
+                inp[1].send_keys(Keys.CONTROL+'a')
+                inp[1].send_keys(Keys.BACKSPACE)
+                inp[1].send_keys(self.cst_phone)
+                inp[1].send_keys(Keys.ENTER)
                 
-                
-            if self.real_name: # 实名者信息不为空
-                button_replace = 9
-                print('###选择购票人信息###')
-                try:
-                    list_xpath = "//*[@id=\"confirmOrder_1\"]/div[2]/div[2]/div[1]/div[%d]/label/span[1]/input"
-                    for i in range(len(self.real_name)): # 选择第i个实名者
-                        WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
-                            EC.presence_of_element_located((By.XPATH, list_xpath%(i+1)))).click()
-                except Exception as e:
-                    print(e)
-                    raise Exception("***错误：实名信息框未显示，请检查网络或配置文件***")
+            #填写观影人
+            buydiv=self.driver.find_elements(By.XPATH,'//div[@class="dm-ticket-buyer"]')
+            print(len(buydiv))
+            if len(buydiv)>0:
+                print('###勾选观演人信息###')
+                buyer_list=buydiv[0].find_elements(By.XPATH,'.//div[@class="next-col buyer-list-item"]')
+
+                for item in self.buyer:
+                    #print(item)
+                    for it in buyer_list:
+                        lab=it.find_element(By.XPATH,'.//span[@class="next-checkbox-label"]')
+                        ip=it.find_element(By.XPATH,'.//input[@type="checkbox"]')
+                        if lab.text==item:
+                            ip.click()
+  
+                    
+            # if self.real_name: # 实名者信息不为空
+            #     button_replace = 9
+            #     print('###选择购票人信息###')
+            #     try:
+            #         list_xpath = "//*[@id=\"confirmOrder_1\"]/div[2]/div[2]/div[1]/div[%d]/label/span[1]/input"
+            #         for i in range(len(self.real_name)): # 选择第i个实名者
+            #             WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
+            #                 EC.presence_of_element_located((By.XPATH, list_xpath%(i+1)))).click()
+            #     except Exception as e:
+            #         print(e)
+            #         raise Exception("***错误：实名信息框未显示，请检查网络或配置文件***")
             submitbtn = WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
                     EC.presence_of_element_located(
                         (By.XPATH, button_xpath))) # 同意以上协议并提交订单
@@ -433,7 +459,8 @@ class Concert(object):
         if self.status == 6:  # 说明抢票成功
             print("###经过%d轮奋斗，共耗时%f秒，抢票成功！请确认订单信息###" % (self.num, round(self.time_end - self.time_start, 3)))
         else:
-            self.driver.quit()
+            pass
+            #self.driver.quit()
 
 
 if __name__ == '__main__':
@@ -450,7 +477,7 @@ if __name__ == '__main__':
                     config = loads(f.read())
                 # params: 场次优先级，票价优先级，日期， 实名者序号, 用户昵称， 购买票数， 官网网址， 目标网址， 浏览器
         con = Concert(config['sess'], config['price'], config['date'], config['real_name'], config['nick_name'], config['ticket_num'],
-                      config['damai_url'], config['target_url'], config['browser'],config['cst_name'],config['cst_phone'])
+                      config['damai_url'], config['target_url'], config['browser'],config['cst_name'],config['cst_phone'],config['buyer'])
     except Exception as e:
         print(e)
         raise Exception("***错误：初始化失败，请检查配置文件***")
