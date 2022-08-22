@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver import ActionChains
 from msedge.selenium_tools import EdgeOptions
 from msedge.selenium_tools import Edge
 # import sys # 用于py2.7时解注释
@@ -72,13 +73,13 @@ class Concert(object):
         print("###请扫码登录###")
         while self.driver.title == '大麦登录':  # 等待扫码完成
             sleep(1)
-        dump(self.driver.get_cookies(), open("cookies.pkl", "wb"))
+        dump(self.driver.get_cookies(), open("./cookies.pkl", "wb"))
         print("###Cookie保存成功###")
 
         
     def set_cookie(self):
         try:
-            cookies = load(open("cookies.pkl", "rb"))  # 载入cookie
+            cookies = load(open("./cookies.pkl", "rb"))  # 载入cookie
             for cookie in cookies:
                 cookie_dict = {
                     'domain': '.damai.cn',  # 必须有，不然就是假登录
@@ -98,11 +99,16 @@ class Concert(object):
     def login(self):
         if not exists('cookies.pkl'):  # 如果不存在cookie.pkl,就获取一下
             if self.browser == 0: # 选择了Chrome浏览器
-                self.driver = webdriver.Chrome()
+                self.driver = webdriver.Chrome('./msedgedriver.exe')
             elif self.browser == 1: # 选择了Firefox浏览器
-                self.driver = webdriver.Firefox()
+                self.driver = webdriver.Firefox('./msedgedriver.exe')
             elif self.browser == 2: # 选择了Edge浏览器
-                self.driver = Edge('./msedgedriver.exe')
+                edge_options = EdgeOptions()
+                edge_options.use_chromium = True
+                edge_options.add_argument('--disable-blink-features=AutomationControlled')
+                edge_options.add_argument('--ignore-certificate-errors')
+                edge_options.add_argument('-ignore -ssl-errors')
+                self.driver = Edge('./msedgedriver.exe',options=edge_options)
             else:
                 raise Exception("***错误：未知的浏览器类别***")
             self.get_cookie()
@@ -117,10 +123,12 @@ class Concert(object):
             options = webdriver.FirefoxProfile()
             options.set_preference('permissions.default.image', 2)  
             self.driver = webdriver.Firefox(options)
-        elif self.browser == 2: # 选择了火狐浏览器
+        elif self.browser == 2: # 选择了edge浏览器
             edge_options = EdgeOptions()
             edge_options.use_chromium = True
             edge_options.add_argument('--disable-blink-features=AutomationControlled')
+            edge_options.add_argument('--ignore-certificate-errors')
+            edge_options.add_argument('-ignore -ssl-errors')
             No_Image_loading = {"profile.managed_default_content_settings.images": 2}
             edge_options.add_experimental_option("prefs",No_Image_loading)
             self.driver = Edge('./msedgedriver.exe',options=edge_options)
@@ -344,7 +352,6 @@ class Concert(object):
         if self.status in [3, 4]:
             print('###开始确认订单###')
             button_xpath = '//div[@class="submit-wrapper"]/button' # 同意以上协议并提交订单Xpath
-            button_replace = 8 # 当实名者信息不空时为9，空时为8
             
             #填写联系人
             formdiv=self.driver.find_elements(By.XPATH,'//div[@class="delivery-form"]')
@@ -398,7 +405,34 @@ class Concert(object):
             submitbtn = WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
                     EC.presence_of_element_located(
                         (By.XPATH, button_xpath))) # 同意以上协议并提交订单
-            submitbtn.click()  
+            submitbtn.click()
+            
+            try:
+                print('###自动解锁滑轮中###')
+                baxia=WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
+                    EC.presence_of_element_located((By.XPATH, '//iframe[@id="baxia-dialog-content"]')))
+                self.driver.switch_to_frame(baxia)
+                n=0
+                while n<3:
+                    n+=1
+                    span=WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
+                        EC.presence_of_element_located((By.ID, 'nc_1_n1z')))
+                    #span=self.driver.find_element_by_id("nc_1_n1z")
+                    action = ActionChains(self.driver)
+                    action.click_and_hold(span)
+                    for item in [105]*4:
+                        action.move_by_offset(item,0)
+                    action.release()
+                    action.perform()
+                    check=self.driver.find_elements(By.XPATH, '//div[contains(string(), "验证失败")]')
+                    if len(check)>0:
+                        btn=self.driver.find_element_by_id("nc_1_wrapper")
+                        action = ActionChains(self.driver)
+                        action.click(btn)
+                        action.perform()
+            except Exception as e:
+                print('***自动解锁滑轮失败，请手动解锁***')
+                    
             '''# 以下的方法更通用，但是更慢
             try:
                 buttons = self.driver.find_elements_by_tag_name('button') # 找出所有该页面的button
