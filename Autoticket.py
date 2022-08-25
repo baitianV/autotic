@@ -420,16 +420,30 @@ class Concert(object):
                     #span=self.driver.find_element_by_id("nc_1_n1z")
                     action = ActionChains(self.driver)
                     action.click_and_hold(span)
-                    for item in [105]*4:
+                    #sleep(0.3)
+                    for item in [51]*6:
                         action.move_by_offset(item,0)
+                        #sleep(0.1)
+                    #sleep(0.5)
                     action.release()
                     action.perform()
-                    check=self.driver.find_elements(By.XPATH, '//div[contains(string(), "验证失败")]')
-                    if len(check)>0:
+                    
+                    
+                    #check=self.driver.find_elements(By.XPATH, '//div[contains(string(), "验证失败")]')
+                    # if len(check)>0:
+                    #     btn=self.driver.find_element_by_id("nc_1_wrapper")
+                    #     action = ActionChains(self.driver)
+                    #     action.click(btn)
+                    #     action.perform()
+                    try:
+                        check=WebDriverWait(self.driver, self.total_wait_time, self.refresh_wait_time).until(
+                            EC.presence_of_element_located((By.XPATH, '//div[contains(string(), "验证失败")]')))
                         btn=self.driver.find_element_by_id("nc_1_wrapper")
                         action = ActionChains(self.driver)
                         action.click(btn)
                         action.perform()
+                    except Exception as e:
+                        pass
             except Exception as e:
                 print('***自动解锁滑轮失败，请手动解锁***')
                     
@@ -453,7 +467,7 @@ class Concert(object):
                 print('---提交订单失败,请查看问题---')
                 print(e)
 
-                
+           
     def check_order_2(self):
         if self.status in [3, 4]:
             print('###开始确认订单###')
