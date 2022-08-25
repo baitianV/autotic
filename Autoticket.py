@@ -166,6 +166,11 @@ class Concert(object):
         print("###开始进行日期及票价选择###")
 
         while self.driver.title.find('确认订单') == -1:  # 如果跳转到了确认界面就算这步成功了，否则继续执行此步
+            realname_div=self.driver.find_elements_by_class_name('realname-popup-wrap')
+            if(len(realname_div)>0):
+                bt=realname_div[0].find_element(By.XPATH,'.//div[@class="button"]')
+                #print(bt)
+                bt.click()
             self.num += 1 # 记录抢票轮数
             
             if self.date != 0: # 如果需要选择日期
