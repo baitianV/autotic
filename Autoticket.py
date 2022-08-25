@@ -421,7 +421,7 @@ class Concert(object):
                     action = ActionChains(self.driver)
                     action.click_and_hold(span)
                     #sleep(0.3)
-                    for item in [51]*6:
+                    for item in [30]*10:
                         action.move_by_offset(item,0)
                         #sleep(0.1)
                     #sleep(0.5)
