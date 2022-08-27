@@ -169,7 +169,7 @@ class Concert(object):
             realname_div=self.driver.find_elements_by_class_name('realname-popup-wrap')
             if(len(realname_div)>0):
                 bt=realname_div[0].find_element(By.XPATH,'.//div[@class="button"]')
-                #print(bt)
+                print('###自动点击实名认证按钮###')
                 bt.click()
             self.num += 1 # 记录抢票轮数
             
@@ -180,18 +180,19 @@ class Concert(object):
                 datelist = datelist[7:] # 跳过前面7个表示周一~周日的元素
                 datelist[self.date - 1].click() # 选择对应日期
             
-            selects = self.driver.find_elements_by_class_name('perform__order__select')
+            #selects = self.driver.find_elements_by_class_name('perform__order__select')
             # print('可选区域数量为：{}'.format(len(selects)))
-            for item in selects:
-                if item.find_element_by_class_name('select_left').text == '场次':
-                    session = item
-                    # print('\t场次定位成功')
-                elif item.find_element_by_class_name('select_left').text == '票档':
-                    price = item
-                    # print('\t票档定位成功')
-
-            session_list = session.find_elements_by_class_name('select_right_list_item')
+            # for item in selects:
+            #     if item.find_element_by_class_name('select_left').text == '场次':
+            #         session = item
+            #         # print('\t场次定位成功')
+            #     elif item.find_element_by_class_name('select_left').text == '票档':
+            #         price = item
+            #         # print('\t票档定位成功')
+            session_item=self.driver.find_elements(By.XPATH, '//div[@class="select_left" and contains(string(), "场次")]')
+            session_list = session_item[0].find_elements(By.XPATH,'..//div[contains(@class,"select_right_list_item")]')
             print('可选场次数量为：{}'.format(len(session_list)))
+            
             if len(self.session) == 1:
                 j = session_list[self.session[0] - 1].click()
             else:
@@ -207,8 +208,10 @@ class Concert(object):
                     else:
                         j.click()
                         break
-
-            price_list = price.find_elements_by_class_name('select_right_list_item')
+                    
+            price_item=self.driver.find_elements(By.XPATH, '//div[@class="select_left" and contains(string(), "票档")]')
+            price_list = session_item[0].find_elements(By.XPATH,'..//div[contains(@class,"select_right_list_item")]')       
+            #price_list = price_item.find_elements_by_class_name('select_right_list_item')             
             print('可选票档数量为：{}'.format(len(price_list)))
             if len(self.price) == 1:
                 j = price_list[self.price[0] - 1].click()
